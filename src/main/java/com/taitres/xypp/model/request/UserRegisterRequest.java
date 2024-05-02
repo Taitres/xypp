@@ -2,6 +2,7 @@ package com.taitres.xypp.model.request;
 
 import lombok.Data;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 /**
@@ -11,12 +12,15 @@ import java.io.Serializable;
 @Data
 public class UserRegisterRequest implements Serializable {
 
-    private static final long serialVersionUID = 3191241716373120793L;
+    @Serial
+    private static final long serialVersionUID = 2939351080406951711L;
 
     private String userAccount;
 
     private String userPassword;
 
     private String checkPassword;
+
+    private String studentId;
 
 }
