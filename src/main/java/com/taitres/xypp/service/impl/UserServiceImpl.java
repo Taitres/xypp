@@ -2,6 +2,8 @@ package com.taitres.xypp.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.taitres.xypp.common.ErrorCode;
 import com.taitres.xypp.constant.UserConstant;
 import com.taitres.xypp.exception.BusinessException;
@@ -13,22 +15,28 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.taitres.xypp.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
-* @author Marlin
-* @description 针对表【user(用户)】的数据库操作Service实现
-* @createDate 2024-05-02 15:44:42
-*/
+ * @author Marlin
+ * @description 针对表【user(用户)】的数据库操作Service实现
+ * @createDate 2024-05-02 15:44:42
+ */
 @Service
 @Slf4j
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
-    implements UserService {
+        implements UserService {
 
     @Resource
     private UserMapper userMapper;
@@ -39,7 +47,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     private static final String SALT = "taitres_xypp_2024_05_02_15_44_42";
 
     @Override
-    public long userRegister(String userAccount, String userPassword, String checkPassword,String studentId) {
+    public long userRegister(String userAccount, String userPassword, String checkPassword, String studentId) {
 
         // 1. 校验
         if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword)) {
@@ -163,6 +171,38 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 移除登录态
         request.getSession().removeAttribute(USER_LOGIN_STATE);
         return 1;
+    }
+
+
+    @Override
+    public List<User> searchUsersByTags(List<String> tagNameList) {
+        if (CollectionUtils.isEmpty(tagNameList)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        for (String tag : tagNameList) {
+             queryWrapper = queryWrapper.like("tags", tag);
+        }
+        List<User> userList = userMapper.selectList(queryWrapper);
+        return userList.stream().map(this::getSafetyUser).collect(Collectors.toList());
+
+//        // 1. 先查询所有用户
+//        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+//        List<User> userList = userMapper.selectList(queryWrapper);
+//        Gson gson = new Gson();
+//        // 2. 在内存中判断是否包含要求的标签
+//        return userList.stream().filter(user -> {
+//            String tagsStr = user.getTags();
+//            Set<String> tempTagNameSet = gson.fromJson(tagsStr, new TypeToken<Set<String>>() {
+//            }.getType());
+//            tempTagNameSet = Optional.ofNullable(tempTagNameSet).orElse(new HashSet<>());
+//            for (String tagName : tagNameList) {
+//                if (!tempTagNameSet.contains(tagName)) {
+//                    return false;
+//                }
+//            }
+//            return true;
+//        }).map(this::getSafetyUser).collect(Collectors.toList());
     }
 
 }

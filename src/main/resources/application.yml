@@ -7,10 +7,9 @@ spring:
   # DataSource Config
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-#    url: jdbc:mysql://localhost:3306/xxpp?serverTimezone=Asia/Shanghai
-    url: jdbc:mysql://49.232.1.111:3306/xypp?useUnicode=true&characterEncoding=utf-8&useSSL=false
-    username: xypp
-    password: xypp123456
+    url: jdbc:mysql://localhost:3306/xxpp?serverTimezone=Asia/Shanghai
+    username: root
+    password: 123456
   # session 失效时间（分钟）
   session:
     timeout: 86400
@@ -20,6 +19,8 @@ server:
   servlet:
     context-path: /api
 mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
       logic-delete-field: isDelete # 全局逻辑删除的实体字段名(since 3.3.0,配置后可以忽略不配置步骤2)
