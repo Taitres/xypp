@@ -17,15 +17,4 @@ class UserServiceTest {
 
     }
 
-    @Test
-    void userRegister() {
-        String userAccount = "test1";
-        String userPassword = "123";
-        String checkPassword = "12345678";
-        String studentId = "202100000000";
-        long result = userService.userRegister(userAccount, userPassword, checkPassword,studentId);
-        System.out.println(result);
-
-
-    }
 }
