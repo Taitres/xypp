@@ -1,5 +1,6 @@
 package com.taitres.xypp.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.taitres.xypp.model.domain.User;
 import jakarta.servlet.http.HttpServletRequest;
@@ -68,4 +69,31 @@ public interface UserService extends IService<User> {
      * @return
      */
     List<User> searchUsersByTags(List<String> tagNameList);
+
+
+    /**
+     * 更新用户信息
+     *
+     * @param user
+     * @param request
+     * @return
+     */
+    int updataUser(User user,HttpServletRequest request);
+
+    /**
+     * 获取当前登录用户信息
+     *
+     * @return
+     */
+    User getLoginUser(HttpServletRequest request);
+
+    /**
+     * 首页推荐用户
+     *
+     * @param pageSize
+     * @param pageNum
+     * @param request
+     * @return
+     */
+    Page<User> recommendUsers(long pageSize, long pageNum, HttpServletRequest request);
 }

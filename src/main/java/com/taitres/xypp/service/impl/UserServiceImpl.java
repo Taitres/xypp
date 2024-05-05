@@ -1,10 +1,12 @@
 package com.taitres.xypp.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.taitres.xypp.common.ErrorCode;
+import com.taitres.xypp.common.ResultUtils;
 import com.taitres.xypp.constant.UserConstant;
 import com.taitres.xypp.exception.BusinessException;
 import com.taitres.xypp.mapper.UserMapper;
@@ -14,6 +16,8 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
@@ -22,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -40,6 +45,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Resource
     private UserMapper userMapper;
+
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
 
     /**
      * 盐值，混淆密码
@@ -118,7 +126,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         // 2. 加密
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
-        System.out.println("encryptPassword: " + encryptPassword);
         // 查询用户是否存在
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("user_account", userAccount);
@@ -203,6 +210,60 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 //            }
 //            return true;
 //        }).map(this::getSafetyUser).collect(Collectors.toList());
+    }
+
+    @Override
+    public int updataUser(User user, HttpServletRequest request) {
+        long userId = user.getId();
+        if(userId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        //用户不存在
+        User oldUser = userMapper.selectById(userId);
+        if (oldUser == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR);
+        }
+        //如果是管理员或者是本人可以更新
+        if(isAdmin(request) || userId == ((User) request.getSession().getAttribute(USER_LOGIN_STATE)).getId()) {
+
+            return userMapper.updateById(user);
+        }else {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+    }
+
+    @Override
+    public User getLoginUser(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
+        if (userObj == null) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        return (User) userObj;
+    }
+
+    @Override
+    public Page<User> recommendUsers(long pageSize, long pageNum, HttpServletRequest request) {
+        User loginUser = getLoginUser(request);
+        String redisKey = String.format("taitres:user:recommend:%s", loginUser.getId());
+        ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
+        // 如果有缓存，直接读缓存
+        Page<User> userPage = (Page<User>) valueOperations.get(redisKey);
+        if (userPage != null) {
+            return userPage;
+        }
+        // 无缓存，查数据库
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        userPage = this.page(new Page<>(pageNum, pageSize), queryWrapper);
+        // 写缓存
+        try {
+            valueOperations.set(redisKey, userPage, 30000, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            log.error("redis set key error", e);
+        }
+        return userPage;
     }
 
 }

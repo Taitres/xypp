@@ -2,6 +2,7 @@ package com.taitres.xypp.controller;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.taitres.xypp.common.BaseResponse;
 import com.taitres.xypp.common.ErrorCode;
 import com.taitres.xypp.common.ResultUtils;
@@ -14,10 +15,13 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.taitres.xypp.constant.UserConstant.USER_LOGIN_STATE;
@@ -30,6 +34,9 @@ public class UserController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
 
     /**
      * 用户注册
@@ -74,6 +81,12 @@ public class UserController {
         return ResultUtils.success(user);
     }
 
+    /**
+     * 根据用户名搜索用户
+     * @param username
+     * @param request
+     * @return
+     */
     @GetMapping("/search")
     public BaseResponse<List<User>> searchUsers(String username, HttpServletRequest request) {
         if (!userService.isAdmin(request)) {
@@ -128,6 +141,21 @@ public class UserController {
     }
 
     /**
+     * 更新用户信息
+     *  @param user
+     *  @param request
+     *  @return BaseResponse<Integer>
+     */
+    @PostMapping("/update")
+    public BaseResponse<Integer> updateUser(@RequestBody User user, HttpServletRequest request) {
+        if (user == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        int res = userService.updataUser(user, request);
+        return ResultUtils.success(res);
+    }
+
+    /**
      * 用户注销
      *
      * @param request
@@ -151,4 +179,20 @@ public class UserController {
         return ResultUtils.success(userList);
     }
 
+    /**
+     * 首页推荐用户
+     *
+     * @param pageSize
+     * @param pageNum
+     * @param request
+     * @return
+     */
+    @GetMapping("/recommend")
+    public BaseResponse<Page<User>> recommendUsers(long pageSize, long pageNum, HttpServletRequest request) {
+        if (pageSize <= 0 || pageNum <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Page<User> userPage = userService.recommendUsers(pageSize, pageNum, request);
+        return ResultUtils.success(userPage);
+    }
 }
