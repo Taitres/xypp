@@ -22,15 +22,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.taitres.xypp.constant.SystermConstant.SYSTEM_ID;
 import static com.taitres.xypp.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
@@ -247,7 +245,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public Page<User> recommendUsers(long pageSize, long pageNum, HttpServletRequest request) {
         User loginUser = getLoginUser(request);
-        String redisKey = String.format("taitres:user:recommend:%s", loginUser.getId());
+        String redisKey = String.format("%s:user:recommend:%s", SYSTEM_ID,loginUser.getId());
         ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
         // 如果有缓存，直接读缓存
         Page<User> userPage = (Page<User>) valueOperations.get(redisKey);
@@ -259,7 +257,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         userPage = this.page(new Page<>(pageNum, pageSize), queryWrapper);
         // 写缓存
         try {
-            valueOperations.set(redisKey, userPage, 30000, TimeUnit.MILLISECONDS);
+            Random random = new Random();
+            // 设置随机时间范围
+            int minTime = 500000;      // 最小时间（毫秒）
+            int maxTime = 3000000;     // 最大时间（毫秒）
+            int randomTime = random.nextInt(maxTime - minTime + 1) + minTime;
+            valueOperations.set(redisKey, userPage, randomTime, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             log.error("redis set key error", e);
         }
