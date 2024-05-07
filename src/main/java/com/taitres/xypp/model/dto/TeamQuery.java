@@ -1,4 +1,4 @@
-package com.taitres.xypp.model;
+package com.taitres.xypp.model.dto;
 
 
 import com.taitres.xypp.common.PageRequest;
