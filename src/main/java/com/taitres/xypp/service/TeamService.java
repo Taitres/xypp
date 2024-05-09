@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.taitres.xypp.model.domain.User;
 import com.taitres.xypp.model.dto.TeamQuery;
 import com.taitres.xypp.model.request.TeamJoinRequest;
+import com.taitres.xypp.model.request.TeamQuitRequest;
 import com.taitres.xypp.model.request.TeamUpdateRequest;
 import com.taitres.xypp.model.vo.TeamUserVO;
 import jakarta.servlet.http.HttpServletRequest;
@@ -52,4 +53,21 @@ public interface TeamService extends IService<Team> {
      */
     boolean joinTeam(TeamJoinRequest teamJoinRequest, User loginUser);
 
+    /**
+     * 退出队伍
+     *
+     * @param teamQuitRequest
+     * @param loginUser
+     * @return
+     */
+    boolean quitTeam(TeamQuitRequest teamQuitRequest, User loginUser);
+
+    /**
+     * 删除队伍
+     *
+     * @param id
+     * @param loginUser
+     * @return
+     */
+    boolean deleteTeam(long id, User loginUser);
 }
